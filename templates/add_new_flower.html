@@ -4,8 +4,8 @@
 
 
 <div class="form-group">
-    <table class="table table-striped">
-        <form action="{{url_for('store.add_new_flower')}}" method ='post'>
+    <form action="{{url_for('store.add_new_flower')}}" method ='post'>
+        <table class="table table-striped">
             <tr>
                 <th>Flower</th>
                 <th>Quantity</th>
@@ -21,7 +21,8 @@
                 <td><a href="/add_flower"><input type="button" class="btn btn-primary" value="Back"></a></td>
                 <td></td>
             </tr>
-        </form>
-    </table>
+        </table>
+    </form>
+ 
 </div>
 {% endblock %}
