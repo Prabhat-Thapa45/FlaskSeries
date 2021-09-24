@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, request, flash, redirect, url_for
 from functools import wraps
 from src.execute_sql import query_handler_no_fetch, query_handler_fetch
-from src.check import check_flower_by_name, int_convertor, validate_purchase_input
+from src.check import check_flower_by_name, int_convertor, float_convertor, validate_purchase_input
 
 home_reg = Blueprint("store", __name__, template_folder="templates")
 
@@ -67,11 +67,12 @@ def add_new_flower():
     if request.method == 'POST':
         query = "SELECT * FROM items"
         results = query_handler_fetch(query)
-        flower_name = request.form.get('new_flower')
-        quantity = int(request.form.get('new_quantity'))
-        try:
-            price = float(request.form.get('new_price'))
-        except ValueError:
+        flower_name = request.form['new_flower']
+        quantity = int_convertor(request.form['new_quantity'])
+        price = request.form['new_price']
+        price = float_convertor(price)
+        if type(price) != float:
+            flash("Please enter valid price", "danger")
             return redirect(url_for('store.add_new_flower'))
         else:
             if check_flower_by_name(results, flower_name):
