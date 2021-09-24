@@ -33,11 +33,28 @@ def int_convertor(value: str) -> int:
         return 0
 
 
+def float_convertor(value: str) -> float:
+    """Converts str type to float type
+    Args:
+        value (str): strings to be converted to int type
+    return:
+        float
+    raises:
+        ValueError: if value is str that cannot be converted into float
+        return:
+            (str)
+    """
+    try:
+        return float(value)
+    except ValueError:
+        return ""
+
+
 def validate_purchase_input(quantity, bouquet_size, available_in_stock, username, flower_name, price):
     if quantity == 0:
         return ["No items were added into your cart", "danger",  bouquet_size]
     if available_in_stock < quantity:
-        return [f"We can't meet your demand, we only have {available_in_stock} of them in stock", "danger", 
+        return [f"We can't meet your demand, we only have {available_in_stock} of them in stock", "danger",
                 bouquet_size]
     elif bouquet_size >= quantity > 0:
         bouquet_size -= quantity
