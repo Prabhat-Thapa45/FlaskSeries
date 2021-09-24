@@ -16,7 +16,7 @@
         <tr><form name="add" action="{{url_for('store.add_to_cart')}}" method="post">
             <td>{{item.flower_name}}</td>
             <td>{{item.price}}</td>
-            <td><input type="number" name="number"></td>
+            <td><input type="text" name="number"></td>
             <input type="hidden" name="available" value="{{item.quantity}}">
             <input type="hidden" name="bouquet_size" value="{{bouquet_size}}">
             <input type="hidden" name="flower_name" value={{item.flower_name}}>
