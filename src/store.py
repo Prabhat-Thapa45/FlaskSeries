@@ -55,8 +55,9 @@ def add_flower():
         flower_name = request.form.get('flower_name')
         query = "UPDATE items SET quantity=%s WHERE flower_name=%s"
         values = (sum([quantity_to_add + quantity_present]), flower_name)
-        query_handler_no_fetch(query, values)
-
+        msg = query_handler_no_fetch(query, values)
+        if msg:
+            flash(msg, "danger")
         return redirect(url_for('store.add_flower'))
     return render_template('add_flower.html', articles=results)
 
@@ -78,11 +79,15 @@ def add_new_flower():
             if check_flower_by_name(results, flower_name):
                 query = "UPDATE items SET quantity = quantity + %s, price = %s WHERE flower_name=%s"
                 values = (quantity, price, flower_name)
-                query_handler_no_fetch(query, values)
+                msg = query_handler_no_fetch(query, values)
+                if msg:
+                    flash(msg, "danger")
                 return redirect(url_for('store.add_flower', articles=results))
             query = "INSERT INTO items(flower_name, price, quantity) VALUES(%s, %s, %s)"
             values = (flower_name, price, quantity)
-            query_handler_no_fetch(query, values)
+            msg = query_handler_no_fetch(query, values)
+            if msg:
+                flash(msg, "danger")
             return redirect(url_for('store.add_flower', articles=results))
     return render_template('add_new_flower.html')
 
