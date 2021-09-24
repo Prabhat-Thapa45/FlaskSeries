@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, request, flash, redirect, url_for
 from functools import wraps
 from src.execute_sql import query_handler_no_fetch, query_handler_fetch
-from src.check import check_flower_by_name, int_convertor
+from src.check import check_flower_by_name, int_convertor, validate_purchase_input
 
 home_reg = Blueprint("store", __name__, template_folder="templates")
 
@@ -19,34 +19,29 @@ def is_logged_in(f):
 
 
 @home_reg.route('/home')
-@is_logged_in
 def home():
-    return render_template('index.html', username=session['username'])
+    return render_template('index.html')
 
 
 # About
 @home_reg.route('/about')
-@is_logged_in
 def about():
     return render_template('about.html')
 
 
 # contact
 @home_reg.route('/contact')
-@is_logged_in
 def contact():
     return render_template('contact.html')
 
 
 @home_reg.route('/menu')
-@is_logged_in
 def menu():
     return render_template('menu.html')
 
 
 # adds flower to existing flowers and also adds new flower
 @home_reg.route('/add_flower', methods=['Get', 'POST'])
-@is_logged_in
 def add_flower():
     query = "SELECT * FROM items"
     results = query_handler_fetch(query)
@@ -68,7 +63,6 @@ def add_flower():
 
 # adds new flower
 @home_reg.route('/add_new_flower', methods=['GET', 'POST'])
-@is_logged_in
 def add_new_flower():
     if request.method == 'POST':
         query = "SELECT * FROM items"
@@ -93,15 +87,26 @@ def add_new_flower():
 
 
 @home_reg.route('/bouquet_size', methods=['GET', 'POST'])
-@is_logged_in
 def bouquet():
+    """if method is get
+    :return: bouquet_size.html
+    if method is post then first details of available flower is fetched
+    from items table using query_handler_fetch method.
+    Next bouquet_size is received using request and it's made sure it is int type using int_convertor  which returns
+    zero if the data is invalid.
+    It's then checked if it's negative or zero then
+    :return: bouquet_size.html
+    If it's positive then
+    :return: purchase_flower.html, bouquet_size (int), articles (tuple): tuple consisting dictionary as items where each
+    dict item represents single row from items.
+    """
     if request.method == 'POST':
         query = "SELECT flower_name, price, quantity FROM items"
         results = query_handler_fetch(query)
 
-        bouquet_size = int(request.form.get('bouquet_size'))
+        bouquet_size = int_convertor(request.form.get('bouquet_size'))
         if bouquet_size < 1:
-            flash("bouquet size should more than zero", "danger")
+            flash("bouquet size should be number more than zero", "danger")
             return render_template('bouquet_size.html')
         flash(f"You have {bouquet_size} flowers to be added into your bouquet", "success")
         return render_template('purchase_flower.html', bouquet_size=bouquet_size, articles=results)
@@ -110,7 +115,6 @@ def bouquet():
 
 # adds the flower with desired quantity in your cart
 @home_reg.route('/purchase_flower/add_to_cart', methods=['GET', 'POST'])
-@is_logged_in
 def add_to_cart():
     """
     Fetches data from items and populates 'purchase_flower.html' with flowers to be bought
@@ -122,27 +126,14 @@ def add_to_cart():
     results = query_handler_fetch(query)
 
     if request.method == 'POST':
-        bouquet_size = int(request.form.get('bouquet_size'))
-        try:
-            quantity = int(request.form['number'])
-        except ValueError:
-            flash("No items were added into your cart", "danger")
-            quantity = 0
+        bouquet_size = int_convertor(request.form.get('bouquet_size'))
+        quantity = int_convertor(request.form['number'])
         available_in_stock = int(request.form.get('available'))
-        if available_in_stock == 0:
-            flash("We are out of stock", "danger")
-        if available_in_stock < quantity:
-            flash(f"We can't meet your demand, we only have {available_in_stock} of them in stock", "danger")
-        elif bouquet_size >= quantity > 0:
-            bouquet_size -= quantity
-            flash("Item added to cart", "success")
-            query = "INSERT INTO orders(username, flower_name, quantity, price) VALUES(%s, %s, %s, %s)"
-            values = (session['username'], request.form.get("flower_name"), quantity, request.form.get("price"))
-            query_handler_no_fetch(query, values)
-        elif bouquet_size < quantity:
-            flash("You have exceeded bouquet size", "danger")
-        elif quantity < 0:
-            flash("Order quantity cannot be less than zero", "danger")
+        flower_name = request.form['flower_name']
+        price = request.form['price']
+        report = validate_purchase_input(quantity, bouquet_size, available_in_stock, session['username'], flower_name, price)
+        flash(report[0], report[1])
+        bouquet_size = report[2]
         if bouquet_size > 0:
             flash(f"You have {bouquet_size} flowers to be added into your bouquet", "success")
         else:
@@ -153,7 +144,6 @@ def add_to_cart():
 
 # finally buys the product and clears the items from your cart
 @home_reg.route('/purchase_flower/order_placed', methods=['GET', 'POST'])
-@is_logged_in
 def proceed_to_buy():
     """
     Populates the template with data fetched from table orders where username is equal to user logged in
@@ -196,7 +186,6 @@ def proceed_to_buy():
 
 
 @home_reg.route('/check_order_bq', methods=['POST'])
-@is_logged_in
 def check_order_bq():
     if request.method == 'POST':
         bouquet_size = int(request.form['bouquet_size'])
@@ -211,7 +200,6 @@ def check_order_bq():
 
 # displays your order details with total amount to be paid
 @home_reg.route('/go_to_cart', methods=['GET', 'POST'])
-@is_logged_in
 def go_to_cart():
     """
     Populates go_to_cart template from data in orders table. This table is major table consisting orders from all users
@@ -227,7 +215,6 @@ def go_to_cart():
 
 
 @home_reg.route('/cancel_order', methods=['GET', 'POST'])
-@is_logged_in
 def cancel_order():
     """
     Deletes from username
